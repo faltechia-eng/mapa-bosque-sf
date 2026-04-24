@@ -97,7 +97,7 @@ body{background:#0d1117;font-family:'Segoe UI',system-ui,-apple-system,Arial,san
     <h1>Bosque Santa Felicidade</h1>
     <div class="subtitle">Porto Belo/SC - Loteamento Residencial</div>
   </div>
-  <div class="badge">27 disponíveis</div>
+  <div class="badge" id="availCount">— disponíveis</div>
 </div>
 
 <div class="legend">
@@ -129,7 +129,6 @@ body{background:#0d1117;font-family:'Segoe UI',system-ui,-apple-system,Arial,san
 const IMG_W=1397,IMG_H=768;
 
 const availableLots={
-'L.14-I':{quadra:'Quadra 09',area:'360,00 m²',preco:'R$ 549.000'},
 'L.15-I':{quadra:'Quadra 09',area:'360,00 m²',preco:'R$ 549.000'},
 'L.02-I':{quadra:'Quadra 09',area:'360,00 m²',preco:'R$ 559.000'},
 'L.04-I':{quadra:'Quadra 09',area:'360,00 m²',preco:'R$ 649.000'},
@@ -171,6 +170,7 @@ const mo=document.getElementById('modalOverlay');
 const md=document.getElementById('modal');
 
 // Render
+document.getElementById('availCount').textContent=Object.keys(availableLots).length+' disponíveis';
 Object.entries(lotPositions).forEach(([id,pos])=>{
   const info=availableLots[id];
   const isA=!!info;

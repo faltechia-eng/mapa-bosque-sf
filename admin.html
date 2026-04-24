@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Bosque Santa Felicidade</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;color:#c9d1d9;min-height:100vh;padding-bottom:90px}
+
+.header{background:linear-gradient(135deg,#161b22,#0d1117);padding:16px 20px;border-bottom:1px solid #30363d;position:sticky;top:0;z-index:50}
+.header h1{font-size:18px;color:#f0f6fc}
+.header .sub{font-size:12px;color:#8b949e;margin-top:3px}
+
+.toolbar{background:#161b22;padding:12px 20px;border-bottom:1px solid #30363d;display:flex;gap:10px;flex-wrap:wrap;align-items:center;position:sticky;top:57px;z-index:49}
+.toolbar input[type=text]{flex:1;min-width:180px;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:8px 12px;border-radius:6px;font-size:14px}
+.toolbar select{background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:8px 12px;border-radius:6px;font-size:14px}
+.toolbar label{display:flex;align-items:center;gap:6px;font-size:13px;color:#8b949e;cursor:pointer}
+.toolbar input[type=checkbox]{accent-color:#238636}
+
+.stats{display:flex;gap:16px;padding:10px 20px;background:#161b22;border-bottom:1px solid #30363d;font-size:13px;flex-wrap:wrap}
+.stat .val{font-weight:700;color:#f0f6fc}
+.stat.avail .val{color:#3fb950}
+.stat.sold .val{color:#f85149}
+.stat.changed .val{color:#d29922}
+
+.list{padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:14px;transition:border-color .15s,box-shadow .15s}
+.card.changed{border-color:#d29922;box-shadow:0 0 0 1px rgba(210,153,34,.3)}
+.card.avail{border-left:4px solid #238636}
+.card.sold{border-left:4px solid #da3633}
+
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+.card-head .id{font-size:16px;font-weight:700;color:#f0f6fc}
+.card-head .status-badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px}
+.card-head .status-badge.avail{background:rgba(35,134,54,.25);color:#3fb950}
+.card-head .status-badge.sold{background:rgba(218,54,51,.25);color:#f85149}
+.card-head .changed-dot{font-size:10px;color:#d29922;margin-left:auto}
+
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:6px 8px;background:#0d1117;border-radius:6px;cursor:pointer;user-select:none}
+.toggle-row input{accent-color:#238636}
+.toggle-row .label{font-size:13px}
+
+.field{margin-bottom:8px}
+.field label{display:block;font-size:11px;color:#8b949e;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.field input{width:100%;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:7px 10px;border-radius:5px;font-size:13px;font-family:inherit}
+.field input:focus{outline:none;border-color:#58a6ff}
+.field input:disabled{opacity:.4;cursor:not-allowed}
+
+.empty{grid-column:1/-1;text-align:center;padding:40px;color:#8b949e}
+
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:#161b22;border-top:1px solid #30363d;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.4)}
+.bottom-bar .info{font-size:13px;color:#8b949e}
+.bottom-bar .info strong{color:#d29922}
+.btn{padding:10px 18px;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,opacity .15s}
+.btn.primary{background:#238636;color:#fff}
+.btn.primary:hover:not(:disabled){background:#2ea043}
+.btn.primary:disabled{background:#21262d;color:#6e7681;cursor:not-allowed}
+.btn.ghost{background:transparent;color:#8b949e;border:1px solid #30363d}
+.btn.ghost:hover{background:#21262d;color:#c9d1d9}
+
+.login{max-width:380px;margin:80px auto;padding:28px;background:#161b22;border:1px solid #30363d;border-radius:12px}
+.login h2{margin-bottom:6px}
+.login p{font-size:13px;color:#8b949e;margin-bottom:18px}
+.login input{width:100%;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:10px 12px;border-radius:6px;font-size:14px;margin-bottom:12px}
+.login button{width:100%}
+.login .err{color:#f85149;font-size:13px;margin-bottom:10px;display:none}
+
+.toast{position:fixed;top:20px;right:20px;background:#238636;color:#fff;padding:12px 18px;border-radius:6px;font-size:14px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.3);animation:slideIn .2s ease-out}
+.toast.error{background:#da3633}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+@media(max-width:600px){
+  .toolbar{top:61px}
+  .list{grid-template-columns:1fr;padding:12px}
+  .bottom-bar{flex-direction:column;align-items:stretch;gap:8px}
+  .bottom-bar .info{text-align:center}
+  .btn{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="login">
+  <h2>Admin</h2>
+  <p>Bosque Santa Felicidade — Gerenciamento de lotes</p>
+  <div class="err" id="loginErr">Senha incorreta.</div>
+  <input type="password" id="pwdInput" placeholder="Senha" autofocus>
+  <button class="btn primary" onclick="doLogin()">Entrar</button>
+</div>
+
+<div id="app" style="display:none">
+
+<div class="header">
+  <h1>Bosque Santa Felicidade — Admin</h1>
+  <div class="sub">Edite os lotes, baixe o index.html atualizado e faça o deploy.</div>
+</div>
+
+<div class="stats">
+  <div class="stat avail"><span class="val" id="statAvail">0</span> disponíveis</div>
+  <div class="stat sold"><span class="val" id="statSold">0</span> vendidos</div>
+  <div class="stat changed"><span class="val" id="statChanged">0</span> alterados</div>
+</div>
+
+<div class="toolbar">
+  <input type="text" id="search" placeholder="Buscar lote (ex: 14I, quadra 09)">
+  <select id="filter">
+    <option value="all">Todos</option>
+    <option value="avail">Só disponíveis</option>
+    <option value="sold">Só vendidos</option>
+    <option value="changed">Só alterados</option>
+  </select>
+  <select id="sort">
+    <option value="id">Ordenar: ID</option>
+    <option value="quadra">Ordenar: Quadra</option>
+    <option value="preco">Ordenar: Preço</option>
+  </select>
+</div>
+
+<div class="list" id="list"></div>
+
+<div class="bottom-bar">
+  <div class="info" id="bottomInfo">Carregando…</div>
+  <div style="display:flex;gap:8px">
+    <button class="btn ghost" onclick="resetChanges()">Descartar</button>
+    <button class="btn primary" id="downloadBtn" onclick="downloadHtml()" disabled>Baixar index.html</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+const ADMIN_PASS='bosque2026';
+const STORAGE_KEY='bosque_admin_draft_v1';
+
+let originalHtml='';
+let originalAvailable={};
+let allLotIds=[];
+let state={};
+
+function toast(msg,isErr){
+  const t=document.createElement('div');
+  t.className='toast'+(isErr?' error':'');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
+function doLogin(){
+  const v=document.getElementById('pwdInput').value;
+  if(v===ADMIN_PASS){
+    sessionStorage.setItem('bosque_admin_auth','1');
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+  }else{
+    document.getElementById('loginErr').style.display='block';
+  }
+}
+document.getElementById('pwdInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+if(sessionStorage.getItem('bosque_admin_auth')==='1'){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  init();
+}
+
+async function init(){
+  try{
+    const res=await fetch('index.html?_='+Date.now());
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    originalHtml=await res.text();
+  }catch(e){
+    toast('Erro ao carregar index.html: '+e.message,true);
+    return;
+  }
+  const availMatch=originalHtml.match(/const availableLots=(\{[\s\S]*?\});\s*\n\s*const lotPositions/);
+  const posMatch=originalHtml.match(/const lotPositions=(\{[\s\S]*?\});/);
+  if(!availMatch||!posMatch){
+    toast('Não foi possível localizar os dados no index.html',true);
+    return;
+  }
+  try{
+    originalAvailable=eval('('+availMatch[1]+')');
+    const positions=eval('('+posMatch[1]+')');
+    allLotIds=Object.keys(positions).sort(idCompare);
+  }catch(e){
+    toast('Erro parseando dados: '+e.message,true);
+    return;
+  }
+  const draft=localStorage.getItem(STORAGE_KEY);
+  if(draft){
+    try{
+      state=JSON.parse(draft);
+      toast('Rascunho anterior restaurado');
+    }catch(e){state=JSON.parse(JSON.stringify(originalAvailable))}
+  }else{
+    state=JSON.parse(JSON.stringify(originalAvailable));
+  }
+  document.getElementById('search').addEventListener('input',render);
+  document.getElementById('filter').addEventListener('change',render);
+  document.getElementById('sort').addEventListener('change',render);
+  render();
+}
+
+function idCompare(a,b){
+  const ra=a.match(/L\.(\d+)-(\w+)/),rb=b.match(/L\.(\d+)-(\w+)/);
+  if(!ra||!rb)return a.localeCompare(b);
+  if(ra[2]!==rb[2])return ra[2].localeCompare(rb[2]);
+  return parseInt(ra[1])-parseInt(rb[1]);
+}
+
+function isChanged(id){
+  const o=originalAvailable[id],n=state[id];
+  if(!o&&!n)return false;
+  if(!o||!n)return true;
+  return o.quadra!==n.quadra||o.area!==n.area||o.preco!==n.preco;
+}
+
+function changedIds(){return allLotIds.filter(isChanged)}
+
+function persist(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  updateStats();
+}
+
+function updateStats(){
+  const availCount=Object.keys(state).length;
+  const soldCount=allLotIds.length-availCount;
+  const chgCount=changedIds().length;
+  document.getElementById('statAvail').textContent=availCount;
+  document.getElementById('statSold').textContent=soldCount;
+  document.getElementById('statChanged').textContent=chgCount;
+  const btn=document.getElementById('downloadBtn');
+  btn.disabled=chgCount===0;
+  document.getElementById('bottomInfo').innerHTML=chgCount===0
+    ?'Nenhuma alteração.'
+    :'<strong>'+chgCount+'</strong> lote'+(chgCount>1?'s':'')+' alterado'+(chgCount>1?'s':'');
+}
+
+function render(){
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  const filter=document.getElementById('filter').value;
+  const sort=document.getElementById('sort').value;
+  let ids=allLotIds.slice();
+  if(sort==='quadra')ids.sort((a,b)=>{
+    const qa=(state[a]||originalAvailable[a]||{}).quadra||'zzz',qb=(state[b]||originalAvailable[b]||{}).quadra||'zzz';
+    return qa.localeCompare(qb)||idCompare(a,b);
+  });
+  else if(sort==='preco')ids.sort((a,b)=>{
+    const pa=precoNum(state[a]),pb=precoNum(state[b]);
+    if(pa===pb)return idCompare(a,b);
+    return pa-pb;
+  });
+  else ids.sort(idCompare);
+  ids=ids.filter(id=>{
+    const available=!!state[id];
+    if(filter==='avail'&&!available)return false;
+    if(filter==='sold'&&available)return false;
+    if(filter==='changed'&&!isChanged(id))return false;
+    if(q){
+      const info=state[id]||{};
+      const hay=(id+' '+(info.quadra||'')+' '+(info.area||'')+' '+(info.preco||'')).toLowerCase();
+      if(!hay.includes(q))return false;
+    }
+    return true;
+  });
+  const list=document.getElementById('list');
+  if(ids.length===0){
+    list.innerHTML='<div class="empty">Nenhum lote corresponde ao filtro.</div>';
+  }else{
+    list.innerHTML=ids.map(renderCard).join('');
+  }
+  updateStats();
+}
+
+function precoNum(info){
+  if(!info||!info.preco)return Infinity;
+  const n=info.preco.replace(/[^\d]/g,'');
+  return parseInt(n)||Infinity;
+}
+
+function renderCard(id){
+  const available=!!state[id];
+  const info=state[id]||originalAvailable[id]||{quadra:'',area:'',preco:''};
+  const changed=isChanged(id);
+  const statusCls=available?'avail':'sold';
+  const statusLabel=available?'Disponível':'Vendido';
+  return '<div class="card '+statusCls+(changed?' changed':'')+'" data-id="'+id+'">'
+    +'<div class="card-head">'
+      +'<span class="id">'+id+'</span>'
+      +'<span class="status-badge '+statusCls+'">'+statusLabel+'</span>'
+      +(changed?'<span class="changed-dot">● modificado</span>':'')
+    +'</div>'
+    +'<label class="toggle-row">'
+      +'<input type="checkbox" '+(available?'checked':'')+' onchange="toggleLot(\''+id+'\',this.checked)">'
+      +'<span class="label">Marcar como disponível</span>'
+    +'</label>'
+    +'<div class="field"><label>Quadra</label><input type="text" value="'+escapeAttr(info.quadra)+'" '+(available?'':'disabled')+' oninput="updateField(\''+id+'\',\'quadra\',this.value)"></div>'
+    +'<div class="field"><label>Área</label><input type="text" value="'+escapeAttr(info.area)+'" '+(available?'':'disabled')+' oninput="updateField(\''+id+'\',\'area\',this.value)" placeholder="ex: 360,00 m²"></div>'
+    +'<div class="field"><label>Preço</label><input type="text" value="'+escapeAttr(info.preco)+'" '+(available?'':'disabled')+' oninput="updateField(\''+id+'\',\'preco\',this.value)" placeholder="ex: R$ 549.000"></div>'
+  +'</div>';
+}
+
+function escapeAttr(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+
+function toggleLot(id,on){
+  if(on){
+    const prev=originalAvailable[id]||{quadra:'',area:'',preco:''};
+    state[id]={quadra:prev.quadra||'',area:prev.area||'',preco:prev.preco||''};
+  }else{
+    delete state[id];
+  }
+  persist();
+  render();
+}
+
+function updateField(id,field,value){
+  if(!state[id])return;
+  state[id][field]=value;
+  persist();
+  const card=document.querySelector('.card[data-id="'+id+'"]');
+  if(card)card.classList.toggle('changed',isChanged(id));
+}
+
+function resetChanges(){
+  if(changedIds().length===0)return;
+  if(!confirm('Descartar todas as alterações?'))return;
+  state=JSON.parse(JSON.stringify(originalAvailable));
+  localStorage.removeItem(STORAGE_KEY);
+  render();
+  toast('Alterações descartadas');
+}
+
+function serializeAvailable(){
+  const keys=Object.keys(state);
+  if(keys.length===0)return 'const availableLots={};';
+  const lines=keys.map(k=>{
+    const v=state[k];
+    return "'"+k+"':{quadra:"+jsStr(v.quadra)+",area:"+jsStr(v.area)+",preco:"+jsStr(v.preco)+"}";
+  });
+  return 'const availableLots={\n'+lines.join(',\n')+'\n};';
+}
+
+function jsStr(s){return "'"+(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"'"}
+
+function downloadHtml(){
+  const newBlock=serializeAvailable();
+  const patched=originalHtml.replace(/const availableLots=\{[\s\S]*?\};(?=\s*\n\s*const lotPositions)/,newBlock);
+  if(patched===originalHtml){
+    toast('Falha ao gerar arquivo: bloco não encontrado',true);
+    return;
+  }
+  const blob=new Blob([patched],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='index.html';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},100);
+  toast('index.html baixado. Commit e faça deploy.');
+}
+
+window.toggleLot=toggleLot;
+window.updateField=updateField;
+</script>
+
+</body>
+</html>
